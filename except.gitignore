@@ -1,0 +1,15 @@
+# Binary / Build
+bin/
+*.exe
+*.out
+
+# Env & Config
+.env
+.env.local
+
+# OS junk
+.DS_Store
+
+# Golang
+*.log
+*.test
