@@ -1,5 +1,5 @@
 // config/db.go
-package config
+package db
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/sinscostank/bengkel-inventory/entity"
+	"github.com/sinscostank/bengkel-inventory/models"
 )
 
 var DB *gorm.DB
@@ -35,15 +35,15 @@ func InitDB() {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
-	// AutoMigrate all entity structs
+	// AutoMigrate all models structs
 	if err := db.AutoMigrate(
-		&entity.User{},
-		&entity.Category{},
-		&entity.Product{},
-		&entity.Activity{},
-		&entity.ActivityItem{},
-		&entity.StockTransaction{},
-		&entity.PriceHistory{},
+		&models.User{},
+		&models.Category{},
+		&models.Product{},
+		&models.Activity{},
+		&models.ActivityItem{},
+		&models.StockTransaction{},
+		&models.PriceHistory{},
 	); err != nil {
 		panic("AutoMigrate failed: " + err.Error())
 	}
