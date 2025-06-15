@@ -3,6 +3,7 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/controller"
+	"github.com/sinscostank/bengkel-inventory/middleware"
 )
 
 func SetupRoutes(
@@ -19,12 +20,12 @@ func SetupRoutes(
 	})
 
 	// Category
-	r.GET("/categories", categoryController.GetCategories)
-	r.POST("/categories", categoryController.CreateCategory)
+	r.GET("/categories", middleware.AuthMiddleware(), categoryController.GetCategories)
+	r.POST("/categories", middleware.AuthMiddleware(), categoryController.CreateCategory)
 
 	// Product
-	r.GET("/products", productController.GetProducts)
-	r.POST("/products", productController.CreateProduct)
+	r.GET("/products", middleware.AuthMiddleware(), productController.GetProducts)
+	r.POST("/products", middleware.AuthMiddleware(), productController.CreateProduct)
 
 	// User
 	r.POST("/register", userController.RegisterUser)

@@ -5,51 +5,56 @@ import (
 	"os"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
-	"log"
 	"time"
 )
 
 // Secret key to sign JWTs (should be moved to environment variables in production)
 var SecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 
+// UserClaims is the custom claims structure for the JWT.
+type UserClaims struct {
+	ID    uint   `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+	jwt.StandardClaims
+}
+
 // GenerateJWT generates a JWT token for the user
-func GenerateJWT(userID uint, userEmail string, role string) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email": userEmail,
-		"role":    role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),  // Expiry time of 24 hours
+func GenerateJWT(userID uint, email, role string) (string, error) {
+	claims := UserClaims{
+		ID:    userID,
+		Email: email,
+		Role:  role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+			Issuer:    "bengkel-inventory",
+		},
 	}
 
+	// Create the token with claims and sign it with the secret key
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(SecretKey)
-	if err != nil {
-		log.Printf("Error generating token: %v", err)
-		return "", err
-	}
-
-	return signedToken, nil
+	return token.SignedString(SecretKey)
 }
 
 // ValidateJWT validates a JWT token and returns the claims
-func ValidateJWT(tokenString string) (jwt.MapClaims, error) {
-	// Parsing the token and validating its claims
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Check the signing method is HMAC (HS256)
+func ValidateJWT(tokenString string) (*UserClaims, error) {
+	// Parse the JWT string and validate it
+	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Ensure that the signing method is correct
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Println("Invalid signing method")
-			return nil, errors.New("Invalid signing method")  // err should be a custom error or use `errors.New("invalid signing method")`
+			return nil, errors.New("unexpected signing method")
 		}
 		return SecretKey, nil
 	})
 
 	if err != nil {
-		log.Printf("Error validating token: %v", err)
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	// Extract the claims from the token
+	if claims, ok := token.Claims.(*UserClaims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, err
+
+	return nil, errors.New("invalid token")
 }
