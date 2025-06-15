@@ -13,6 +13,7 @@ type Activity struct {
 	User      User           `json:"user" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	Date      time.Time      `json:"date" gorm:"not null"`
 	Status    string         `json:"status" gorm:"type:enum('success','failed');not null"`
+	Type      string         `json:"type" gorm:"type:enum('inbound','outbound');not null"`	
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`

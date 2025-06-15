@@ -22,17 +22,17 @@ func SetupRoutes(
 
 	// Category
 	r.GET("/categories", middleware.AuthMiddleware(), categoryController.GetCategories)
-	r.POST("/categories", middleware.AuthMiddleware(), categoryController.CreateCategory)
+	r.POST("/categories", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.CreateCategory)
 	r.GET("/categories/:id", middleware.AuthMiddleware(), categoryController.GetCategoryByID)
-	r.PUT("/categories/:id", middleware.AuthMiddleware(), categoryController.UpdateCategory)
-	r.DELETE("/categories/:id", middleware.AuthMiddleware(), categoryController.DeleteCategory)
+	r.PUT("/categories/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.UpdateCategory)
+	r.DELETE("/categories/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.DeleteCategory)
 
 	// Product
 	r.GET("/products", middleware.AuthMiddleware(), productController.GetProducts)
-	r.POST("/products", middleware.AuthMiddleware(), productController.CreateProduct)
+	r.POST("/products", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.CreateProduct)
 	r.GET("/products/:id", middleware.AuthMiddleware(), productController.GetProductByID)
-	r.PUT("/products/:id", middleware.AuthMiddleware(), productController.UpdateProduct)
-	r.DELETE("/products/:id", middleware.AuthMiddleware(), productController.DeleteProduct)
+	r.PUT("/products/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.UpdateProduct)
+	r.DELETE("/products/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.DeleteProduct)
 
 	// User
 	r.POST("/register", userController.RegisterUser)
@@ -41,6 +41,9 @@ func SetupRoutes(
 	// Activity
 	r.GET("/activities", middleware.AuthMiddleware(), activityController.GetActivities)
 	r.POST("/activities", middleware.AuthMiddleware(), activityController.CreateActivity)
+
+	// Stock Transactions
+	r.POST("/stock-transactions", middleware.AuthMiddleware(), middleware.AdminMiddleware(), activityController.CreateActivity) 
 
 	return r
 
