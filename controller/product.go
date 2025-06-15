@@ -14,13 +14,15 @@ import (
 type ProductController struct {
 	ProductRepo  repository.ProductRepository
 	CategoryRepo repository.CategoryRepository
+	PriceHistoryRepo repository.PriceHistoryRepository
 }
 
 // NewProductController creates a new ProductController instance
-func NewProductController(productRepo repository.ProductRepository, categoryRepo repository.CategoryRepository) *ProductController {
+func NewProductController(productRepo repository.ProductRepository, categoryRepo repository.CategoryRepository, priceHistoryRepo repository.PriceHistoryRepository) *ProductController {
 	return &ProductController{
 		ProductRepo:  productRepo,
 		CategoryRepo: categoryRepo,
+		PriceHistoryRepo: priceHistoryRepo,
 	}
 }
 
@@ -132,6 +134,38 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	if category == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category_id"})
 		return
+	}
+
+	// Check if requested price is equal to current price
+	if req.Price <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Price must be greater than 0"})
+		return
+	}
+
+	// Find the existing product to compare prices
+	existingProduct, err := pc.ProductRepo.FindByID(uint(productID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching existing product"})
+		return
+	}
+
+	if existingProduct == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Check if requested price is equal to current price
+	if req.Price != existingProduct.Price {
+		// Create price history entry
+		priceHistory := models.PriceHistory{
+			ProductID: existingProduct.ID,
+			OldPrice:  existingProduct.Price,
+			NewPrice:  req.Price,
+		}
+		if err := pc.PriceHistoryRepo.Create(&priceHistory); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating price history"})
+			return
+		}
 	}
 
 	product := models.Product{

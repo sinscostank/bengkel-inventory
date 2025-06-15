@@ -42,10 +42,11 @@ func main() {
 	activityRepo := repository.NewActivityRepository(dbConn)
 	actiityItemRepo := repository.NewActivityItemRepository(dbConn)
 	stockTransactionRepo := repository.NewStockTransactionRepository(dbConn)
+	priceHistoryRepo := repository.NewPriceHistoryRepository(dbConn)
 
 	// Create controllers
 	userController := controller.NewUserController(userRepo)
-	productController := controller.NewProductController(productRepo, categoryRepo)
+	productController := controller.NewProductController(productRepo, categoryRepo, priceHistoryRepo)
 	categoryController := controller.NewCategoryController(categoryRepo)
 	activityController := controller.NewActivityController(activityRepo, actiityItemRepo, stockTransactionRepo, productRepo)
 	
