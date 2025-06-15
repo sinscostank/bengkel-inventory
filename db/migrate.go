@@ -1,5 +1,5 @@
 // config/migrate.go
-package config
+package db
 
 import (
 	"fmt"

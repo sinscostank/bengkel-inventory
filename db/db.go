@@ -6,15 +6,14 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/sinscostank/bengkel-inventory/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	"github.com/sinscostank/bengkel-inventory/models"
 )
 
 var DB *gorm.DB
 
-func InitDB() {
+func InitDB() (*gorm.DB, error) {
 	if err := godotenv.Load(); err != nil {
 		panic("Failed to load .env file")
 	}
@@ -49,4 +48,7 @@ func InitDB() {
 	}
 
 	DB = db
+
+	// Return the initialized db connection
+	return db, nil	
 }
