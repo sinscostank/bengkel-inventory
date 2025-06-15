@@ -5,7 +5,10 @@ import (
 	"github.com/sinscostank/bengkel-inventory/controller"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(userController *controller.UserController) *gin.Engine {
+
+	r := gin.Default()
+
 	// Health‐check
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
@@ -18,4 +21,11 @@ func SetupRoutes(r *gin.Engine) {
 	// Product
 	r.GET("/products", controller.GetProducts)
 	r.POST("/products", controller.CreateProduct)
+
+	// User
+	r.POST("/register", userController.RegisterUser)
+	r.POST("/login", userController.LoginUser)
+
+	return r
+
 }
