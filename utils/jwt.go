@@ -12,9 +12,10 @@ import (
 var SecretKey = []byte("your-secret-key")
 
 // GenerateJWT generates a JWT token for the user
-func GenerateJWT(userID uint, role string) (string, error) {
+func GenerateJWT(userID uint, userEmail string, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
+		"email": userEmail,
 		"role":    role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),  // Expiry time of 24 hours
 	}

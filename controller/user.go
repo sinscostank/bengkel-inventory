@@ -87,9 +87,73 @@ func (uc *UserController) RegisterUser(c *gin.Context) {
 	})
 }
 
+// Login handles the login functionality
 func (uc *UserController) LoginUser(c *gin.Context) {
-		
-	//do login
+	var req forms.LoginForm
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+	// Bind the incoming JSON request to the struct
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// If validation fails, return an error response
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid input data",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Check if the user exists by email
+	user, err := uc.UserRepo.FindUserByEmail(req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Error checking user",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// If the user does not exist
+	if user == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid credentials",
+		})
+		return
+	}
+
+	// Check if the provided password matches the stored hashed password
+	if valid := utils.CheckHash(req.Password, user.Password); !valid {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid credentials",
+		})
+		return
+	}
+
+	// Generate JWT token
+	token, err := utils.GenerateJWT(user.ID, user.Email, user.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Error generating JWT token",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Return success response with the JWT token
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Login successful",
+		"data": gin.H{
+			"token": token,
+			"user": gin.H{
+				"id":    user.ID,
+				"name":  user.Name,
+				"email": user.Email,
+				"role":  user.Role,
+			},
+		},
+	})
 }
