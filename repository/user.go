@@ -3,6 +3,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/sinscostank/bengkel-inventory/models"
 	"gorm.io/gorm"
 )

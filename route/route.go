@@ -5,7 +5,11 @@ import (
 	"github.com/sinscostank/bengkel-inventory/controller"
 )
 
-func SetupRoutes(userController *controller.UserController) *gin.Engine {
+func SetupRoutes(
+	userController *controller.UserController, 
+	productController *controller.ProductController, 
+	categoryController *controller.CategoryController,
+	) *gin.Engine {
 
 	r := gin.Default()
 
@@ -15,12 +19,12 @@ func SetupRoutes(userController *controller.UserController) *gin.Engine {
 	})
 
 	// Category
-	r.GET("/categories", controller.GetCategories)
-	r.POST("/categories", controller.CreateCategory)
+	r.GET("/categories", categoryController.GetCategories)
+	r.POST("/categories", categoryController.CreateCategory)
 
 	// Product
-	r.GET("/products", controller.GetProducts)
-	r.POST("/products", controller.CreateProduct)
+	r.GET("/products", productController.GetProducts)
+	r.POST("/products", productController.CreateProduct)
 
 	// User
 	r.POST("/register", userController.RegisterUser)

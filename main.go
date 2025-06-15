@@ -7,12 +7,12 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/sinscostank/bengkel-inventory/db"
-	"github.com/sinscostank/bengkel-inventory/route"
-	"github.com/sinscostank/bengkel-inventory/repository"
-	"github.com/sinscostank/bengkel-inventory/controller"
-	"github.com/sinscostank/bengkel-inventory/forms"
 	"github.com/go-playground/validator/v10"
+	"github.com/sinscostank/bengkel-inventory/controller"
+	"github.com/sinscostank/bengkel-inventory/db"
+	"github.com/sinscostank/bengkel-inventory/forms"
+	"github.com/sinscostank/bengkel-inventory/repository"
+	"github.com/sinscostank/bengkel-inventory/route"
 )
 
 func main() {
@@ -35,19 +35,22 @@ func main() {
 		return
 	}
 
-	// Create repositories
+	// Create repository
 	userRepo := repository.NewUserRepository(dbConn)
+	productRepo := repository.NewProductRepository(dbConn)
+	categoryRepo := repository.NewCategoryRepository(dbConn)
 
 	// Create controllers
 	userController := controller.NewUserController(userRepo)
+	productController := controller.NewProductController(productRepo, categoryRepo)
+	categoryController := controller.NewCategoryController(categoryRepo)
 
 	// 3. Buat Gin router
-	router := route.SetupRoutes(userController)
+	router := route.SetupRoutes(userController, productController, categoryController)
 
 	// 4. (Opsional) Pasang middleware, misalnya CORS atau JWT auth
 	// router.Use(middleware.CORSMiddleware())
 	// router.Use(middleware.AuthMiddleware())
-
 
 	// 6. Jalankan server pada port dari .env (default 8080)
 	port := os.Getenv("PORT")
