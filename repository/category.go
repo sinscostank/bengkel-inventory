@@ -27,11 +27,11 @@ func NewCategoryRepository(db *gorm.DB) CategoryRepository {
 
 // FindAll fetches all products from the database.
 func (r *CategoryRepositoryImpl) FindAll() ([]models.Category, error) {
-	var products []models.Category
-	if err := r.DB.Preload("Category").Find(&products).Error; err != nil {
+	var categories []models.Category
+	if err := r.DB.Preload("Products").Find(&categories).Error; err != nil {
 		return nil, err
 	}
-	return products, nil
+	return categories, nil
 }
 
 // FindByID fetches a category by its ID from the database.
