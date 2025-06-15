@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/forms"
@@ -58,4 +59,74 @@ func (pc *CategoryController) CreateCategory(c *gin.Context) {
 
 	// Return the created product
 	c.JSON(http.StatusCreated, category)
+}
+
+func (pc *CategoryController) GetCategoryByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	category, err := pc.CategoryRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if category == nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Category not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+func (pc *CategoryController) UpdateCategory(c *gin.Context) {
+	var req forms.CategoryForm
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	category, err := pc.CategoryRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if category == nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Category not found"})
+		return
+	}
+
+	category.Name = req.Name
+
+	if err := pc.CategoryRepo.Update(category); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while updating category"})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+func (pc *CategoryController) DeleteCategory(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	if err := pc.CategoryRepo.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting category"})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
 }

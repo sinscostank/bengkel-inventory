@@ -7,9 +7,12 @@ import (
 
 // ProductRepository defines methods to interact with the products table.
 type ProductRepository interface {
-	FindAll() ([]models.Product, error)
 	Create(product *models.Product) error
-	// You can add other methods like FindByID, Update, Delete if needed
+	FindAll() ([]models.Product, error)
+	FindByID(id uint) (*models.Product, error)
+	FindByIDs(ids []uint) ([]models.Product, error)
+	Update(product *models.Product) error
+	Delete(id uint) error
 }
 
 // ProductRepositoryImpl is the implementation of the ProductRepository interface.
@@ -24,6 +27,11 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 	}
 }
 
+// Create adds a new product to the database.
+func (r *ProductRepositoryImpl) Create(product *models.Product) error {
+	return r.DB.Create(product).Error
+}
+
 // FindAll fetches all products from the database.
 func (r *ProductRepositoryImpl) FindAll() ([]models.Product, error) {
 	var products []models.Product
@@ -33,7 +41,30 @@ func (r *ProductRepositoryImpl) FindAll() ([]models.Product, error) {
 	return products, nil
 }
 
-// Create adds a new product to the database.
-func (r *ProductRepositoryImpl) Create(product *models.Product) error {
-	return r.DB.Create(product).Error
+func (r *ProductRepositoryImpl) FindByID(id uint) (*models.Product, error) {
+	var product models.Product
+	if err := r.DB.Preload("Category").First(&product, id).Error; err != nil {
+		return nil, err
+	}
+	return &product, nil
+}
+
+func (r *ProductRepositoryImpl) Update(product *models.Product) error {
+	return r.DB.Save(product).Error
+}
+
+func (r *ProductRepositoryImpl) Delete(id uint) error {
+	var product models.Product
+	if err := r.DB.First(&product, id).Error; err != nil {
+		return err
+	}
+	return r.DB.Delete(&product).Error
+}
+
+func (r *ProductRepositoryImpl) FindByIDs(ids []uint) ([]models.Product, error) {
+	var products []models.Product
+	if err := r.DB.Preload("Category").Where("id IN ?", ids).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }

@@ -39,14 +39,19 @@ func main() {
 	userRepo := repository.NewUserRepository(dbConn)
 	productRepo := repository.NewProductRepository(dbConn)
 	categoryRepo := repository.NewCategoryRepository(dbConn)
+	activityRepo := repository.NewActivityRepository(dbConn)
+	actiityItemRepo := repository.NewActivityItemRepository(dbConn)
+	stockTransactionRepo := repository.NewStockTransactionRepository(dbConn)
 
 	// Create controllers
 	userController := controller.NewUserController(userRepo)
 	productController := controller.NewProductController(productRepo, categoryRepo)
 	categoryController := controller.NewCategoryController(categoryRepo)
+	activityController := controller.NewActivityController(activityRepo, actiityItemRepo, stockTransactionRepo, productRepo)
+	
 
 	// 3. Buat Gin router
-	router := route.SetupRoutes(userController, productController, categoryController)
+	router := route.SetupRoutes(userController, productController, categoryController, activityController)
 
 	// 4. (Opsional) Pasang middleware, misalnya CORS atau JWT auth
 	// router.Use(middleware.CORSMiddleware())

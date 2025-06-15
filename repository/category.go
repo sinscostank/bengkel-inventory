@@ -7,9 +7,11 @@ import (
 
 // CategoryRepository defines methods to interact with the products table.
 type CategoryRepository interface {
-	FindAll() ([]models.Category, error)
 	Create(product *models.Category) error
+	FindAll() ([]models.Category, error)
 	FindByID(id uint) (*models.Category, error)
+	Update(category *models.Category) error
+	Delete(id uint) error
 	// You can add other methods like FindByID, Update, Delete if needed
 }
 
@@ -51,3 +53,18 @@ func (r *CategoryRepositoryImpl) FindByID(id uint) (*models.Category, error) {
 func (r *CategoryRepositoryImpl) Create(product *models.Category) error {
 	return r.DB.Create(product).Error
 }
+
+// Update updates an existing category in the database.
+func (r *CategoryRepositoryImpl) Update(category *models.Category) error {
+	return r.DB.Save(category).Error
+}
+
+// Delete removes a category from the database by its ID.
+func (r *CategoryRepositoryImpl) Delete(id uint) error {
+	var category models.Category
+	if err := r.DB.First(&category, id).Error; err != nil {
+		return err
+	}
+	return r.DB.Delete(&category).Error
+}
+
