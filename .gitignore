@@ -13,3 +13,5 @@ bin/
 # Golang
 *.log
 *.test
+
+tmp/
