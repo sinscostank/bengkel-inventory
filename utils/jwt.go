@@ -2,6 +2,7 @@
 package utils
 
 import (
+	"os"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"log"
@@ -9,7 +10,7 @@ import (
 )
 
 // Secret key to sign JWTs (should be moved to environment variables in production)
-var SecretKey = []byte("your-secret-key")
+var SecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 
 // GenerateJWT generates a JWT token for the user
 func GenerateJWT(userID uint, userEmail string, role string) (string, error) {
