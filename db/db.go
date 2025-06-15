@@ -4,6 +4,7 @@ package db
 import (
 	"fmt"
 	"os"
+	"log"
 
 	"github.com/joho/godotenv"
 	"github.com/sinscostank/bengkel-inventory/models"
@@ -15,7 +16,7 @@ var DB *gorm.DB
 
 func InitDB() (*gorm.DB, error) {
 	if err := godotenv.Load(); err != nil {
-		panic("Failed to load .env file")
+		log.Println("No .env file found. Falling back to OS environment variables.")
 	}
 
 	// Bentuk DSN
