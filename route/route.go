@@ -45,6 +45,9 @@ func SetupRoutes(
 	// Stock Transactions
 	r.POST("/stock-transactions", middleware.AuthMiddleware(), middleware.AdminMiddleware(), activityController.CreateActivity) 
 
+	// Sales Report
+	r.GET("/sales-report", middleware.AuthMiddleware(), productController.SalesReport)
+
 	return r
 
 }

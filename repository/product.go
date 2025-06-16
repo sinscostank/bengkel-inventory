@@ -2,7 +2,9 @@ package repository
 
 import (
 	"github.com/sinscostank/bengkel-inventory/models"
+	"github.com/sinscostank/bengkel-inventory/dto"
 	"gorm.io/gorm"
+	"fmt"
 )
 
 // ProductRepository defines methods to interact with the products table.
@@ -13,6 +15,7 @@ type ProductRepository interface {
 	FindByIDs(ids []uint) ([]models.Product, error)
 	Update(product *models.Product) error
 	Delete(id uint) error
+	FindAllWithSales(page int, limit int) ([]dto.ProductSalesDTO, int64, error)
 }
 
 // ProductRepositoryImpl is the implementation of the ProductRepository interface.
@@ -67,4 +70,45 @@ func (r *ProductRepositoryImpl) FindByIDs(ids []uint) ([]models.Product, error) 
 		return nil, err
 	}
 	return products, nil
+}
+
+func (r *ProductRepositoryImpl) FindAllWithSales(page int, limit int) ([]dto.ProductSalesDTO, int64, error) {
+	var result []dto.ProductSalesDTO
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Count total products
+	err := r.DB.Model(&models.Product{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT 
+			p.id, 
+			p.name, 
+			p.stock,
+			c.category_name,
+			ABS(COALESCE(SUM(ai.quantity), 0)) as total_sales
+		FROM products p
+		JOIN categories c ON p.category_id = c.id
+		LEFT JOIN activity_items ai ON ai.product_id = p.id AND ai.quantity < 0
+		WHERE p.deleted_at IS NULL
+		GROUP BY p.id, p.name, p.stock
+		ORDER BY total_sales DESC
+		LIMIT ? OFFSET ?
+	`
+
+	
+	if page > 0 && limit > 0 {
+		offset := (page - 1) * limit
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+	}
+
+	if err := r.DB.Raw(query, limit, offset).Scan(&result).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return result, total, nil
 }

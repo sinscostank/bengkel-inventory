@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"math"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/forms"
@@ -202,4 +203,38 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+
+func (pc *ProductController) SalesReport(c *gin.Context) {
+
+	// Parse query params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if page < 0 {
+		page = 1
+	}
+	
+	if limit < 0 {
+		limit = 10
+	}
+
+	// Get paginated sales report
+	report, total, err := pc.ProductRepo.FindAllWithSales(page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data"})
+		return
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":       report,
+		"page":       page,
+		"limit":      limit,
+		"total":      total,
+		"totalPages": totalPages,
+	})
+
 }
