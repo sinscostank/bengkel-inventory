@@ -4,15 +4,32 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/controller"
 	"github.com/sinscostank/bengkel-inventory/middleware"
+	"github.com/sinscostank/bengkel-inventory/repository"
+	"gorm.io/gorm"
+
 )
 
 func SetupRoutes(
-	userController *controller.UserController,
-	productController *controller.ProductController,
-	categoryController *controller.CategoryController,
-	activityController *controller.ActivityController,
+	dbConn *gorm.DB,
 ) *gin.Engine {
 
+	// Create repository
+	userRepo := repository.NewUserRepository(dbConn)
+	productRepo := repository.NewProductRepository(dbConn)
+	categoryRepo := repository.NewCategoryRepository(dbConn)
+	activityRepo := repository.NewActivityRepository(dbConn)
+	actiityItemRepo := repository.NewActivityItemRepository(dbConn)
+	stockTransactionRepo := repository.NewStockTransactionRepository(dbConn)
+	priceHistoryRepo := repository.NewPriceHistoryRepository(dbConn)
+
+	// Create controllers
+	userController := controller.NewUserController(userRepo)
+	productController := controller.NewProductController(productRepo, categoryRepo, priceHistoryRepo)
+	categoryController := controller.NewCategoryController(categoryRepo)
+	activityController := controller.NewActivityController(activityRepo, actiityItemRepo, stockTransactionRepo, productRepo)
+
+
+	// Initialize Gin router
 	r := gin.Default()
 
 	authenticatedGroup := r.Group("", middleware.AuthMiddleware())
