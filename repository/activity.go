@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/sinscostank/bengkel-inventory/models"
 	"gorm.io/gorm"
+	"errors"
 )
 
 // ActivityRepository defines methods to interact with the products table.
@@ -38,9 +39,18 @@ func (r *ActivityRepositoryImpl) FindAll() ([]models.Activity, error) {
 
 func (r *ActivityRepositoryImpl) FindByID(id uint) (*models.Activity, error) {
 	var activity models.Activity
-	if err := r.DB.Preload("Items").Preload("User").First(&activity, id).Error; err != nil {
-		return nil, err
-	}
+	err := r.DB.Preload("Items").Preload("User").First(&activity, id).Error
+	
+    if errors.Is(err, gorm.ErrRecordNotFound) {
+        // Return nil, nil to indicate not found without error
+        return nil, nil
+    }
+
+    if err != nil {
+        // Real DB error
+        return nil, err
+    }
+
 	return &activity, nil
 }
 

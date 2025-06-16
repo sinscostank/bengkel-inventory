@@ -29,12 +29,40 @@ func NewProductController(productRepo repository.ProductRepository, categoryRepo
 
 // GetProducts returns all products
 func (pc *ProductController) GetProducts(c *gin.Context) {
+
+	// Parse query params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if page < 0 {
+		page = 1
+	}
+	
+	if limit < 0 {
+		limit = 10
+	}
+
 	// Get all products from the repository
-	prods, err := pc.ProductRepo.FindAll()
+	prods, total, err := pc.ProductRepo.FindAll(page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	var totalPages int
+	if limit == 0 {
+		totalPages = 0
+	} else {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":	prods,
+		"current_page":	page,
+		"limit": limit,
+		"total_items":	total,
+		"total_pages":	totalPages,
+	})
 
 	// Return the products as JSON
 	c.JSON(http.StatusOK, prods)
@@ -227,14 +255,19 @@ func (pc *ProductController) SalesReport(c *gin.Context) {
 		return
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+	var totalPages int
+	if limit == 0 {
+		totalPages = 0
+	} else {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       report,
-		"page":       page,
-		"limit":      limit,
-		"total":      total,
-		"totalPages": totalPages,
+		"data": report,
+		"current_page": page,
+		"limit": limit,
+		"total_items": total,
+		"total_pages": totalPages,
 	})
 
 }

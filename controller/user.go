@@ -11,9 +11,6 @@ import (
 	"github.com/sinscostank/bengkel-inventory/utils"
 )
 
-var userModel = new(models.User)
-var userForm = new(forms.UserForm)
-
 // UserController contains the repository for database access
 type UserController struct {
 	UserRepo *repository.UserRepository

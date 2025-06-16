@@ -5,12 +5,13 @@ import (
 	"github.com/sinscostank/bengkel-inventory/dto"
 	"gorm.io/gorm"
 	"fmt"
+	"errors"
 )
 
 // ProductRepository defines methods to interact with the products table.
 type ProductRepository interface {
 	Create(product *models.Product) error
-	FindAll() ([]models.Product, error)
+	FindAll(page int, limit int) ([]models.Product, int64, error)
 	FindByID(id uint) (*models.Product, error)
 	FindByIDs(ids []uint) ([]models.Product, error)
 	Update(product *models.Product) error
@@ -36,20 +37,48 @@ func (r *ProductRepositoryImpl) Create(product *models.Product) error {
 }
 
 // FindAll fetches all products from the database.
-func (r *ProductRepositoryImpl) FindAll() ([]models.Product, error) {
+func (r *ProductRepositoryImpl) FindAll(page int, limit int) ([]models.Product, int64, error) {
 	var products []models.Product
-	if err := r.DB.Preload("Category").Find(&products).Error; err != nil {
-		return nil, err
+	var total int64
+
+	// Count total products
+	err := r.DB.Model(&models.Product{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
 	}
-	return products, nil
+
+	if page > 0 && limit > 0 {
+		offset := (page - 1) * limit
+		if err := r.DB.Preload("Category").
+			Limit(limit).
+			Offset(offset).
+			Find(&products).Error; err != nil {
+			return nil, 0, err
+		}
+	} else {
+		if err := r.DB.Preload("Category").Find(&products).Error; err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return products, total, nil
 }
 
 func (r *ProductRepositoryImpl) FindByID(id uint) (*models.Product, error) {
-	var product models.Product
-	if err := r.DB.Preload("Category").First(&product, id).Error; err != nil {
-		return nil, err
-	}
-	return &product, nil
+    var product models.Product
+    err := r.DB.Preload("Category").First(&product, id).Error
+
+    if errors.Is(err, gorm.ErrRecordNotFound) {
+        // Return nil, nil to indicate not found without error
+        return nil, nil
+    }
+
+    if err != nil {
+        // Real DB error
+        return nil, err
+    }
+
+    return &product, nil
 }
 
 func (r *ProductRepositoryImpl) Update(product *models.Product) error {
@@ -76,8 +105,6 @@ func (r *ProductRepositoryImpl) FindAllWithSales(page int, limit int) ([]dto.Pro
 	var result []dto.ProductSalesDTO
 	var total int64
 
-	offset := (page - 1) * limit
-
 	// Count total products
 	err := r.DB.Model(&models.Product{}).Count(&total).Error
 	if err != nil {
@@ -85,28 +112,28 @@ func (r *ProductRepositoryImpl) FindAllWithSales(page int, limit int) ([]dto.Pro
 	}
 
 	query := `
-		SELECT 
-			p.id, 
-			p.name, 
-			p.stock,
-			c.category_name,
-			ABS(COALESCE(SUM(ai.quantity), 0)) as total_sales
-		FROM products p
-		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN activity_items ai ON ai.product_id = p.id AND ai.quantity < 0
-		WHERE p.deleted_at IS NULL
-		GROUP BY p.id, p.name, p.stock
-		ORDER BY total_sales DESC
-		LIMIT ? OFFSET ?
+			SELECT 
+				p.id, 
+				p.name, 
+				p.stock,
+				c.name AS category,
+				ABS(COALESCE(SUM(ai.quantity), 0)) AS total_sales
+			FROM products p
+			JOIN categories c ON p.category_id = c.id
+			LEFT JOIN activity_items ai ON ai.product_id = p.id
+			LEFT JOIN activities a ON ai.activity_id = a.id AND a.type = 'outbound'
+			WHERE p.deleted_at IS NULL
+			GROUP BY p.id, p.name, p.stock, c.name
+			ORDER BY total_sales DESC
 	`
 
 	
 	if page > 0 && limit > 0 {
 		offset := (page - 1) * limit
-		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+		query += fmt.Sprintf("	LIMIT %d OFFSET %d", limit, offset)
 	}
-
-	if err := r.DB.Raw(query, limit, offset).Scan(&result).Error; err != nil {
+	
+	if err := r.DB.Raw(query).Scan(&result).Error; err != nil {
 		return nil, 0, err
 	}
 

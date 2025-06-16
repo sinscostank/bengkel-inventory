@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"math"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/forms"
@@ -24,15 +25,41 @@ func NewCategoryController(categoryRepo repository.CategoryRepository) *Category
 
 // GetCategories returns all categories
 func (pc *CategoryController) GetCategories(c *gin.Context) {
+	// Parse query params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if page < 0 {
+		page = 1
+	}
+	
+	if limit < 0 {
+		limit = 10
+	}
+	
 	// Get all categories from the repository
-	cats, err := pc.CategoryRepo.FindAll()
+	cats, total, err := pc.CategoryRepo.FindAll(page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	var totalPages int
+	if limit == 0 {
+		totalPages = 0
+	} else {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
+
 	// Return the categories as JSON
-	c.JSON(http.StatusOK, cats)
+	c.JSON(http.StatusOK, gin.H{
+		"data": cats,
+		"current_page": page,
+		"limit": limit,
+		"total_items": total,
+		"total_pages": totalPages,
+	})
+
 }
 
 // CreateCategory adds a new product
