@@ -1,6 +1,6 @@
-package dto
+package models
 
-type ProductSalesDTO struct {
+type ProductSales struct {
 	ID         uint   `json:"id"`
 	Name       string `json:"name"`
 	Category   string `json:"category"`

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/sinscostank/bengkel-inventory/models"
-	"github.com/sinscostank/bengkel-inventory/dto"
 	"gorm.io/gorm"
 	"fmt"
 	"errors"
@@ -16,7 +15,7 @@ type ProductRepository interface {
 	FindByIDs(ids []uint) ([]models.Product, error)
 	Update(product *models.Product) error
 	Delete(id uint) error
-	FindAllWithSales(page int, limit int) ([]dto.ProductSalesDTO, int64, error)
+	FindAllWithSales(page int, limit int) ([]models.ProductSales, int64, error)
 }
 
 // ProductRepositoryImpl is the implementation of the ProductRepository interface.
@@ -101,8 +100,8 @@ func (r *ProductRepositoryImpl) FindByIDs(ids []uint) ([]models.Product, error) 
 	return products, nil
 }
 
-func (r *ProductRepositoryImpl) FindAllWithSales(page int, limit int) ([]dto.ProductSalesDTO, int64, error) {
-	var result []dto.ProductSalesDTO
+func (r *ProductRepositoryImpl) FindAllWithSales(page int, limit int) ([]models.ProductSales, int64, error) {
+	var result []models.ProductSales
 	var total int64
 
 	// Count total products
