@@ -15,38 +15,63 @@ func SetupRoutes(
 
 	r := gin.Default()
 
+	authenticatedGroup := r.Group("", middleware.AuthMiddleware())
+	{
+		// Category
+		categoryGroup := authenticatedGroup.Group("/categories")
+		{
+			categoryGroup.GET("", categoryController.GetCategories)
+			categoryGroup.GET("/:id", categoryController.GetCategoryByID)
+	
+			// Admin routes for categories
+			adminCategoryGroup := categoryGroup.Group("", middleware.AdminMiddleware())
+			{
+				// Admin only routes
+				adminCategoryGroup.POST("", categoryController.CreateCategory)
+				adminCategoryGroup.PUT("/:id", categoryController.UpdateCategory)
+				adminCategoryGroup.DELETE("/:id", categoryController.DeleteCategory)
+			}
+		
+		}
+	
+		// Product
+		productGroup := authenticatedGroup.Group("/products")
+		{
+			productGroup.GET("", productController.GetProducts)
+			productGroup.GET("/:id", productController.GetProductByID)
+		
+			// Admin routes for products
+			adminProductGroup := productGroup.Group("", middleware.AdminMiddleware())
+			{
+				adminProductGroup.POST("", productController.CreateProduct)
+				adminProductGroup.PUT("/:id", productController.UpdateProduct)
+				adminProductGroup.DELETE("/:id", productController.DeleteProduct)
+			}
+		}
+	
+		// Product
+		activitiesGroup := authenticatedGroup.Group("/activities")
+		{
+			activitiesGroup.GET("", activityController.GetActivities)
+			activitiesGroup.POST("", activityController.CreateActivity)
+		}
+	
+		// Stock Transactions
+		r.POST("/stock-transactions",  middleware.AdminMiddleware(), activityController.CreateActivity) 
+	
+		// Sales Report
+		r.GET("/sales-report", productController.SalesReport)
+	}
+
 	// Health‐check
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
 
-	// Category
-	r.GET("/categories", middleware.AuthMiddleware(), categoryController.GetCategories)
-	r.POST("/categories", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.CreateCategory)
-	r.GET("/categories/:id", middleware.AuthMiddleware(), categoryController.GetCategoryByID)
-	r.PUT("/categories/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.UpdateCategory)
-	r.DELETE("/categories/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), categoryController.DeleteCategory)
-
-	// Product
-	r.GET("/products", middleware.AuthMiddleware(), productController.GetProducts)
-	r.POST("/products", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.CreateProduct)
-	r.GET("/products/:id", middleware.AuthMiddleware(), productController.GetProductByID)
-	r.PUT("/products/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.UpdateProduct)
-	r.DELETE("/products/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), productController.DeleteProduct)
-
 	// User
 	r.POST("/register", userController.RegisterUser)
 	r.POST("/login", userController.LoginUser)
 
-	// Activity
-	r.GET("/activities", middleware.AuthMiddleware(), activityController.GetActivities)
-	r.POST("/activities", middleware.AuthMiddleware(), activityController.CreateActivity)
-
-	// Stock Transactions
-	r.POST("/stock-transactions", middleware.AuthMiddleware(), middleware.AdminMiddleware(), activityController.CreateActivity) 
-
-	// Sales Report
-	r.GET("/sales-report", middleware.AuthMiddleware(), productController.SalesReport)
 
 	return r
 

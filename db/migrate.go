@@ -1,31 +1,26 @@
-// config/migrate.go
 package db
 
 import (
-	"fmt"
-	"os"
+    "log"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/mysql" // blank import MySQL driver
-	_ "github.com/golang-migrate/migrate/v4/source/file"    // blank import file source
+	"github.com/sinscostank/bengkel-inventory/models"
+    "gorm.io/gorm"
 )
 
-// RunMigrations applies SQL migrations from db/migrations
-func RunMigrations() {
-	dsn := fmt.Sprintf(
-		"mysql://%s:%s@tcp(%s:%s)/%s?multiStatements=true",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASS"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"),
-	)
+func RunMigration(db *gorm.DB) {
+    err := db.AutoMigrate(
+        &models.User{},
+        &models.Category{},
+        &models.Product{},
+        &models.Activity{},
+        &models.ActivityItem{},
+        &models.StockTransaction{},
+        &models.PriceHistory{},
+    )
 
-	m, err := migrate.New("file://db/migrations", dsn)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create migrate instance: %v", err))
-	}
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		panic(fmt.Sprintf("migration up failed: %v", err))
-	}
+    if err != nil {
+        log.Fatalf("AutoMigrate failed: %v", err)
+    }
+
+    log.Println("✅ Database migrated successfully.")
 }
