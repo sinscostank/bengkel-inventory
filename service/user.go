@@ -10,15 +10,22 @@ import (
 	"github.com/sinscostank/bengkel-inventory/utils"
 )
 
-type UserService struct {
-	UserRepo *repository.UserRepository
+
+
+type UserService interface {
+	Login(req *forms.LoginForm) (string, *models.User, error)
+	Register(req *forms.RegisterForm) error
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{UserRepo: repo}
+type userService struct {
+	UserRepo repository.UserRepository
 }
 
-func (us *UserService) Register(req *forms.RegisterForm) error {
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userService{UserRepo: repo}
+}
+
+func (us *userService) Register(req *forms.RegisterForm) error {
 	existingUser, _ := us.UserRepo.FindUserByEmail(req.Email)
 	if existingUser != nil {
 		return errors.New("email already in use")
@@ -41,7 +48,7 @@ func (us *UserService) Register(req *forms.RegisterForm) error {
 	return us.UserRepo.CreateUser(&user)
 }
 
-func (us *UserService) Login(req *forms.LoginForm) (string, *models.User, error) {
+func (us *userService) Login(req *forms.LoginForm) (string, *models.User, error) {
 	user, err := us.UserRepo.FindUserByEmail(req.Email)
 	if err != nil {
 		return "", nil, err

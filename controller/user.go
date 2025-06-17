@@ -10,10 +10,10 @@ import (
 
 // UserController contains the repository for database access
 type UserController struct {
-	UserService *service.UserService
+	UserService service.UserService
 }
 
-func NewUserController(service *service.UserService) *UserController {
+func NewUserController(service service.UserService) *UserController {
 	return &UserController{UserService: service}
 }
 

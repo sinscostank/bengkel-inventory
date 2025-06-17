@@ -8,18 +8,24 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserRepository defines methods to interact with the User model
-type UserRepository struct {
+
+type UserRepository interface {
+	FindUserByEmail(email string) (*models.User, error)
+	CreateUser(user *models.User) error
+}
+
+// ProductRepositoryImpl is the implementation of the ProductRepository interface.
+type UserRepositoryImpl struct {
 	DB *gorm.DB
 }
 
 // NewUserRepository returns a new instance of UserRepository
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{DB: db}
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &UserRepositoryImpl{DB: db}
 }
 
 // FindByEmail retrieves a user by their email
-func (r *UserRepository) FindUserByEmail(email string) (*models.User, error) {
+func (r *UserRepositoryImpl) FindUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -31,6 +37,6 @@ func (r *UserRepository) FindUserByEmail(email string) (*models.User, error) {
 }
 
 // Create creates a new user in the database
-func (r *UserRepository) CreateUser(user *models.User) error {
+func (r *UserRepositoryImpl) CreateUser(user *models.User) error {
 	return r.DB.Create(user).Error
 }
