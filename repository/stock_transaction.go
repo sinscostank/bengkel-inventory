@@ -8,7 +8,7 @@ import (
 // StockTransactionRepository defines methods to interact with the products table.
 type StockTransactionRepository interface {
 	Create(product *models.StockTransaction) error
-	CreateStockTransactions(StockTransactions []*models.StockTransaction) error
+	CreateMultiple(StockTransactions []*models.StockTransaction) error
 }
 
 // StockTransactionRepositoryImpl is the implementation of the StockTransactionRepository interface.
@@ -27,7 +27,7 @@ func (r *StockTransactionRepositoryImpl) Create(StockTransaction *models.StockTr
 	return r.DB.Create(StockTransaction).Error
 }
 
-func (r *StockTransactionRepositoryImpl) CreateStockTransactions(StockTransactions []*models.StockTransaction) error {
+func (r *StockTransactionRepositoryImpl) CreateMultiple(StockTransactions []*models.StockTransaction) error {
 	if len(StockTransactions) == 0 {
 		return nil // No items to create
 	}

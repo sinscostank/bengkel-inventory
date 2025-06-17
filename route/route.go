@@ -5,6 +5,7 @@ import (
 	"github.com/sinscostank/bengkel-inventory/controller"
 	"github.com/sinscostank/bengkel-inventory/middleware"
 	"github.com/sinscostank/bengkel-inventory/repository"
+	"github.com/sinscostank/bengkel-inventory/service"
 	"gorm.io/gorm"
 
 )
@@ -18,15 +19,15 @@ func SetupRoutes(
 	productRepo := repository.NewProductRepository(dbConn)
 	categoryRepo := repository.NewCategoryRepository(dbConn)
 	activityRepo := repository.NewActivityRepository(dbConn)
-	actiityItemRepo := repository.NewActivityItemRepository(dbConn)
+	activityItemRepo := repository.NewActivityItemRepository(dbConn)
 	stockTransactionRepo := repository.NewStockTransactionRepository(dbConn)
 	priceHistoryRepo := repository.NewPriceHistoryRepository(dbConn)
 
 	// Create controllers
-	userController := controller.NewUserController(userRepo)
-	productController := controller.NewProductController(productRepo, categoryRepo, priceHistoryRepo)
-	categoryController := controller.NewCategoryController(categoryRepo)
-	activityController := controller.NewActivityController(activityRepo, actiityItemRepo, stockTransactionRepo, productRepo)
+	userController := controller.NewUserController(service.NewUserService(userRepo))
+	productController := controller.NewProductController(service.NewProductService(productRepo, categoryRepo, priceHistoryRepo))
+	categoryController := controller.NewCategoryController(service.NewCategoryService(categoryRepo))
+	activityController := controller.NewActivityController(service.NewActivityService(activityRepo, productRepo, activityItemRepo, stockTransactionRepo))
 
 
 	// Initialize Gin router

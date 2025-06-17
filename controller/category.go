@@ -1,118 +1,93 @@
 package controller
 
 import (
+	"math"
 	"net/http"
 	"strconv"
-	"math"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/forms"
-	"github.com/sinscostank/bengkel-inventory/models"
-	"github.com/sinscostank/bengkel-inventory/repository"
+	"github.com/sinscostank/bengkel-inventory/service"
 )
 
-// CategoryController struct will hold the repository instance
 type CategoryController struct {
-	CategoryRepo repository.CategoryRepository
+	CategoryService service.CategoryService
 }
 
-// NewCategoryController creates a new CategoryController instance
-func NewCategoryController(categoryRepo repository.CategoryRepository) *CategoryController {
+func NewCategoryController(categoryService service.CategoryService) *CategoryController {
 	return &CategoryController{
-		CategoryRepo: categoryRepo,
+		CategoryService: categoryService,
 	}
 }
 
-// GetCategories returns all categories
-func (pc *CategoryController) GetCategories(c *gin.Context) {
-	// Parse query params
+func (cc *CategoryController) GetCategories(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	if page < 0 {
+	if page <= 0 {
 		page = 1
 	}
-	
-	if limit < 0 {
+	if limit <= 0 {
 		limit = 10
 	}
-	
-	// Get all categories from the repository
-	cats, total, err := pc.CategoryRepo.FindAll(page, limit)
+
+	cats, total, err := cc.CategoryService.GetAll(page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var totalPages int
-	if limit == 0 {
-		totalPages = 0
-	} else {
-		totalPages = int(math.Ceil(float64(total) / float64(limit)))
-	}
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
-	// Return the categories as JSON
 	c.JSON(http.StatusOK, gin.H{
-		"data": cats,
+		"data":         cats,
 		"current_page": page,
-		"limit": limit,
-		"total_items": total,
-		"total_pages": totalPages,
+		"limit":        limit,
+		"total_items":  total,
+		"total_pages":  totalPages,
 	})
-
 }
 
-// CreateCategory adds a new product
-func (pc *CategoryController) CreateCategory(c *gin.Context) {
+func (cc *CategoryController) CreateCategory(c *gin.Context) {
 	var req forms.CategoryForm
-
-
-	// Bind the incoming JSON to the product request struct
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Create the product instance
-	category := models.Category{
-		Name:       req.Name,
-	}
-
-	// Create the product using the repository
-	if err := pc.CategoryRepo.Create(&category); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while inserting row"})
+	category, err := cc.CategoryService.Create(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
 		return
 	}
 
-	// Return the created product
 	c.JSON(http.StatusCreated, category)
 }
 
-func (pc *CategoryController) GetCategoryByID(c *gin.Context) {
+func (cc *CategoryController) GetCategoryByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
+	if err != nil || id < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
 		return
 	}
 
-	category, err := pc.CategoryRepo.FindByID(uint(id))
+	category, err := cc.CategoryService.GetByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if category == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Category not found"})
+		if err.Error() == "category not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
 	c.JSON(http.StatusOK, category)
 }
 
-func (pc *CategoryController) UpdateCategory(c *gin.Context) {
+func (cc *CategoryController) UpdateCategory(c *gin.Context) {
 	var req forms.CategoryForm
 	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
+	if err != nil || id < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
 		return
 	}
@@ -122,36 +97,28 @@ func (pc *CategoryController) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	category, err := pc.CategoryRepo.FindByID(uint(id))
+	category, err := cc.CategoryService.Update(uint(id), &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if category == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Category not found"})
-		return
-	}
-
-	category.Name = req.Name
-
-	if err := pc.CategoryRepo.Update(category); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while updating category"})
+		if err.Error() == "category not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
 	c.JSON(http.StatusOK, category)
 }
 
-func (pc *CategoryController) DeleteCategory(c *gin.Context) {
+func (cc *CategoryController) DeleteCategory(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
+	if err != nil || id < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
 		return
 	}
 
-	if err := pc.CategoryRepo.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting category"})
+	if err := cc.CategoryService.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete category"})
 		return
 	}
 

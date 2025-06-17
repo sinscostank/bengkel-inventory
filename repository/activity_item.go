@@ -8,7 +8,7 @@ import (
 // ActivityItemRepository defines methods to interact with the products table.
 type ActivityItemRepository interface {
 	Create(product *models.ActivityItem) error
-	CreateActivityItems(ActivityItems []*models.ActivityItem) error
+	CreateMultiple(ActivityItems []*models.ActivityItem) error
 }
 
 // ActivityItemRepositoryImpl is the implementation of the ActivityItemRepository interface.
@@ -27,7 +27,7 @@ func (r *ActivityItemRepositoryImpl) Create(ActivityItem *models.ActivityItem) e
 	return r.DB.Create(ActivityItem).Error
 }
 
-func (r *ActivityItemRepositoryImpl) CreateActivityItems(ActivityItems []*models.ActivityItem) error {
+func (r *ActivityItemRepositoryImpl) CreateMultiple(ActivityItems []*models.ActivityItem) error {
 	if len(ActivityItems) == 0 {
 		return nil // No items to create
 	}

@@ -7,267 +7,141 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sinscostank/bengkel-inventory/forms"
-	"github.com/sinscostank/bengkel-inventory/models"
-	"github.com/sinscostank/bengkel-inventory/repository"
+	"github.com/sinscostank/bengkel-inventory/service"
 )
 
-// ProductController struct will hold the repository instance
+// ProductController struct holds the service instance
 type ProductController struct {
-	ProductRepo  repository.ProductRepository
-	CategoryRepo repository.CategoryRepository
-	PriceHistoryRepo repository.PriceHistoryRepository
+	ProductService service.ProductService
 }
 
 // NewProductController creates a new ProductController instance
-func NewProductController(productRepo repository.ProductRepository, categoryRepo repository.CategoryRepository, priceHistoryRepo repository.PriceHistoryRepository) *ProductController {
+func NewProductController(productService service.ProductService) *ProductController {
 	return &ProductController{
-		ProductRepo:  productRepo,
-		CategoryRepo: categoryRepo,
-		PriceHistoryRepo: priceHistoryRepo,
+		ProductService: productService,
 	}
 }
 
 // GetProducts returns all products
 func (pc *ProductController) GetProducts(c *gin.Context) {
-
-	// Parse query params
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	if page < 0 {
+	if page < 1 {
 		page = 1
 	}
-	
-	if limit < 0 {
+	if limit < 1 {
 		limit = 10
 	}
 
-	// Get all products from the repository
-	prods, total, err := pc.ProductRepo.FindAll(page, limit)
+	prods, total, err := pc.ProductService.GetAll(page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var totalPages int
-	if limit == 0 {
-		totalPages = 0
-	} else {
-		totalPages = int(math.Ceil(float64(total) / float64(limit)))
-	}
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":	prods,
-		"current_page":	page,
-		"limit": limit,
-		"total_items":	total,
-		"total_pages":	totalPages,
+		"data":          prods,
+		"current_page":  page,
+		"limit":         limit,
+		"total_items":   total,
+		"total_pages":   totalPages,
 	})
-
-	// Return the products as JSON
-	c.JSON(http.StatusOK, prods)
 }
 
 // CreateProduct adds a new product
 func (pc *ProductController) CreateProduct(c *gin.Context) {
 	var req forms.ProductForm
-
-	// Bind the incoming JSON to the product request struct
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	category, err := pc.CategoryRepo.FindByID(req.CategoryID)
+	product, err := pc.ProductService.Create(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// If category is not found, return an error
-	if category == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category_id"})
-		return
-	}
-
-	// Create the product instance
-	product := models.Product{
-		Name:       req.Name,
-		Stock:      req.Stock,
-		Price:      req.Price,
-		Location:   req.Location,
-		CategoryID: req.CategoryID,
-		Category:   *category, // Associate the category directly
-	}
-
-	// Create the product using the repository
-	if err := pc.ProductRepo.Create(&product); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while inserting row"})
-		return
-	}
-
-	// Return the created product
 	c.JSON(http.StatusCreated, product)
-
 }
 
+// GetProductByID returns a product by ID
 func (pc *ProductController) GetProductByID(c *gin.Context) {
-	id := c.Param("id")
 
-	// Convert id to uint
-	productID, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
 		return
 	}
 
-	// Find the product by ID
-	product, err := pc.ProductRepo.FindByID(uint(productID))
+	product, err := pc.ProductService.GetByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching product"})
-		return
-	}
-
-	if product == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		if err.Error() == "product not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
 	c.JSON(http.StatusOK, product)
 }
 
+// UpdateProduct updates an existing product
 func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
-
-	// Convert id to uint
-	productID, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
-		return
-	}
-
 	var req forms.ProductForm
-
-	// Bind the incoming JSON to the product request struct
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	category, err := pc.CategoryRepo.FindByID(req.CategoryID)
+	product, err := pc.ProductService.Update(id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	if category == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category_id"})
-		return
-	}
-
-	// Check if requested price is equal to current price
-	if req.Price <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Price must be greater than 0"})
-		return
-	}
-
-	// Find the existing product to compare prices
-	existingProduct, err := pc.ProductRepo.FindByID(uint(productID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching existing product"})
-		return
-	}
-
-	if existingProduct == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
-		return
-	}
-
-	// Check if requested price is equal to current price
-	if req.Price != existingProduct.Price {
-		// Create price history entry
-		priceHistory := models.PriceHistory{
-			ProductID: existingProduct.ID,
-			OldPrice:  existingProduct.Price,
-			NewPrice:  req.Price,
-		}
-		if err := pc.PriceHistoryRepo.Create(&priceHistory); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating price history"})
-			return
-		}
-	}
-
-	product := models.Product{
-		ID:         uint(productID),
-		Name:       req.Name,
-		Stock:      req.Stock,
-		Price:      req.Price,
-		Location:   req.Location,
-		CategoryID: req.CategoryID,
-	}
-
-	if err := pc.ProductRepo.Update(&product); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while updating product"})
-		return
-	}
-
 	c.JSON(http.StatusOK, product)
 }
 
+// DeleteProduct deletes a product by ID
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	id := c.Param("id")
-
-	// Convert id to uint
-	productID, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+	if err := pc.ProductService.Delete(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Delete the product by ID
-	if err := pc.ProductRepo.Delete(uint(productID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting product"})
-		return
-	}
-
 	c.JSON(http.StatusNoContent, nil)
 }
 
-
+// SalesReport generates a sales report for products
 func (pc *ProductController) SalesReport(c *gin.Context) {
-
-	// Parse query params
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	if page < 0 {
+	if page < 1 {
 		page = 1
 	}
-	
-	if limit < 0 {
+	if limit < 1 {
 		limit = 10
 	}
 
-	// Get paginated sales report
-	report, total, err := pc.ProductRepo.FindAllWithSales(page, limit)
+	report, total, err := pc.ProductService.GetSalesReport(page, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sales report"})
 		return
 	}
 
-	var totalPages int
-	if limit == 0 {
-		totalPages = 0
-	} else {
-		totalPages = int(math.Ceil(float64(total) / float64(limit)))
-	}
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": report,
+		"data":         report,
 		"current_page": page,
-		"limit": limit,
-		"total_items": total,
-		"total_pages": totalPages,
+		"limit":        limit,
+		"total_items":  total,
+		"total_pages":  totalPages,
 	})
-
 }
