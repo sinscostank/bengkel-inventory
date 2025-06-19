@@ -27,7 +27,7 @@ func NewActivityController(ActivityService service.ActivityService) *ActivityCon
 func (pc *ActivityController) GetActivities(c *gin.Context) {
 
 	// Get all categories from the repository
-	cats, err := pc.ActivityService.GetAll()
+	acts, err := pc.ActivityService.GetAll()
 	if err != nil {
 		if err.Error() == "activity not found" {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -38,7 +38,9 @@ func (pc *ActivityController) GetActivities(c *gin.Context) {
 	}
 
 	// Return the categories as JSON
-	c.JSON(http.StatusOK, cats)
+	c.JSON(http.StatusOK, gin.H{
+		"data":         acts,
+	})
 }
 
 // CreateActivity adds a new product

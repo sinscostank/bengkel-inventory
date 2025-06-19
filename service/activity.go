@@ -3,6 +3,8 @@ package service
 
 import (
 	"errors"
+	"time"
+	"fmt"
 
 	"github.com/sinscostank/bengkel-inventory/forms"
 	"github.com/sinscostank/bengkel-inventory/models"
@@ -95,10 +97,15 @@ func (s *activityService) Create(userID uint, userRole string, form *forms.Activ
 		UserID: userID,
 		Status: "success",
 		Type:   form.Type,
+		Date: 	time.Now(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	if err := s.activityRepo.Create(&activity); err != nil {
 		return nil, err
 	}
+
+	fmt.Println("Activity created successfully")
 
 	// Create activity items
 	var activityItems []*models.ActivityItem
@@ -110,12 +117,17 @@ func (s *activityService) Create(userID uint, userRole string, form *forms.Activ
 			Quantity:    qty,
 			PriceAtTime: p.Price,
 			FinalPrice:  p.Price, // No discount
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		activityItems = append(activityItems, item)
 	}
 	if err := s.activityItemRepo.CreateMultiple(activityItems); err != nil {
 		return nil, err
 	}
+
+	fmt.Println("Activity items created successfully")
+
 
 	// Create stock transactions
 	var transactions []*models.StockTransaction
@@ -129,6 +141,9 @@ func (s *activityService) Create(userID uint, userRole string, form *forms.Activ
 			ChangeQuantity: change,
 			ActivityItemID: &item.ID,
 			Note:           "Stock change for activity",
+			Date: 	   time.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		transactions = append(transactions, t)
 	}

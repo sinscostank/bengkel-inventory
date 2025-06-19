@@ -122,5 +122,7 @@ func (cc *CategoryController) DeleteCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
 }

@@ -93,7 +93,7 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 // UpdateProduct updates an existing product
 func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
-	var req forms.ProductForm
+	var req forms.UpdateProductForm
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -114,7 +114,10 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
 }
 
 // SalesReport generates a sales report for products
