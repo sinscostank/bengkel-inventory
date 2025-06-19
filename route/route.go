@@ -75,10 +75,10 @@ func SetupRoutes(
 		}
 	
 		// Stock Transactions
-		r.POST("/stock-transactions",  middleware.AdminMiddleware(), activityController.CreateActivity) 
+		authenticatedGroup.POST("/stock-transactions",  middleware.AdminMiddleware(), activityController.CreateActivity) 
 	
 		// Sales Report
-		r.GET("/sales-report", productController.SalesReport)
+		authenticatedGroup.GET("/sales-report", productController.SalesReport)
 	}
 
 	// Health‐check
